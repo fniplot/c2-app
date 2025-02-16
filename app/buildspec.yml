@@ -1,0 +1,46 @@
+version: 0.2
+
+env:
+  parameter-store:
+    dd_site: /c2/web/app/env/dd_site
+    dd_api_key: /c2/web/app/env/dd_api_key
+    dd_tags: /c2/web/app/env/dd_tags
+    dd_logs_enabled: /c2/web/app/env/dd_logs_enabled
+
+phases:
+  install:
+    commands:
+      - echo install phases.
+  pre_build:
+    commands:
+      - echo pre_build phases.
+      - echo Logging in to Amazon ECR...
+      - |
+        {
+          echo DD_SITE=${dd_site};
+          echo DD_API_KEY=${dd_api_key};
+          echo DD_TAGS=${dd_tags};
+          echo DD_LOGS_ENABLED=${dd_logs_enabled};
+        } > app/scripts/.env
+      - aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin $REPOSITORY_URI
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+  build:
+    commands:
+      - echo build phases.
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - cd app; docker build -t $WEB_APP_REPOSITORY_NAME .; cd -
+      - docker tag $WEB_APP_REPOSITORY_NAME:latest $REPOSITORY_URI/$WEB_APP_REPOSITORY_NAME:$IMAGE_TAG
+      - docker tag $WEB_APP_REPOSITORY_NAME:latest $REPOSITORY_URI/$WEB_APP_REPOSITORY_NAME:latest
+  post_build:
+    commands:
+      - echo post_build phases.
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI/$WEB_APP_REPOSITORY_NAME:$IMAGE_TAG
+      - docker push $REPOSITORY_URI/$WEB_APP_REPOSITORY_NAME:latest
+artifacts:
+  files:
+    - app/scripts/*
+    - app/appspec.yml
