@@ -1,0 +1,15 @@
+# 各種項目の説明
+# https://qiita.com/miriwo/items/19b4dfacf31ed0508dde
+
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /
+hooks:
+  ApplicationStop:
+    - location: scripts/application_stop.sh
+      runas: ec2-user
+  ApplicationStart:
+    - location: scripts/application_start.sh
+      runas: ec2-user

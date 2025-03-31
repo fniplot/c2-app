@@ -1,0 +1,33 @@
+version: "3"
+
+services:
+  web:
+    container_name: c2_web
+    image: ${AWS_ACCOUNT}.dkr.ecr.ap-northeast-1.amazonaws.com/c2-web-server:latest
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - nginx_logs:/var/log/nginx
+    restart: always
+  datadog:
+    container_name: c2_datadog
+    image: ${AWS_ACCOUNT}.dkr.ecr.ap-northeast-1.amazonaws.com/c2-datadog-agent:latest
+    ports:
+      - 8126:8126
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - /scripts/nginx.d/conf.yaml:/etc/datadog-agent/conf.d/nginx.d/conf.yaml
+      - nginx_logs:/var/log/nginx
+    environment:
+      DD_SITE: ${DD_SITE}
+      DD_API_KEY: ${DD_API_KEY}
+      DD_TAGS: ${DD_TAGS}
+      DD_LOGS_ENABLED: ${DD_LOGS_ENABLED}
+    restart: always
+
+volumes:
+  # 各 Docker イメージでデータを共有するための設定
+  nginx_logs:
